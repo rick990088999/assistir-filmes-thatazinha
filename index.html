@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FILMES THATA</title>
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --line: rgba(255,255,255,.14);
+    --text: #e8e8e8;
+    --dim: rgba(255,255,255,.55);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 14px 30px;
+  }
+  h1 {
+    font-size: clamp(1rem, 3.5vw, 1.4rem);
+    font-weight: 300;
+    letter-spacing: .5em;
+    text-align: center;
+    margin-bottom: 22px;
+    color: var(--text);
+  }
+  h1 span { color: var(--dim); }
+
+  /* Moldura discreta (só fora da tela cheia) */
+  #player {
+    position: relative;
+    width: min(100%, 1000px);
+    background: #000;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  #player:fullscreen, #player:-webkit-full-screen {
+    width: 100%; height: 100%;
+    border: none; border-radius: 0;
+  }
+
+  video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    cursor: pointer;
+  }
+  #player:fullscreen video { height: 100%; aspect-ratio: auto; object-fit: contain; }
+
+  .controls {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    padding: 24px 14px 8px;
+    background: linear-gradient(transparent, rgba(0,0,0,.75));
+    display: flex; flex-direction: column; gap: 4px;
+    transition: opacity .3s;
+  }
+  #player.hide .controls { opacity: 0; pointer-events: none; }
+  #player.hide video { cursor: none; }
+
+  .row { display: flex; align-items: center; gap: 8px; }
+  button {
+    background: none; border: none; color: var(--text);
+    font-size: .85rem; font-family: inherit; cursor: pointer;
+    padding: 6px 8px; border-radius: 4px; opacity: .8;
+  }
+  button:hover { opacity: 1; }
+  .time { font-size: .78rem; color: var(--dim); font-variant-numeric: tabular-nums; min-width: 100px; }
+  .spacer { flex: 1; }
+
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    height: 2px; cursor: pointer;
+    background: linear-gradient(to right, #fff var(--p, 0%), rgba(255,255,255,.25) var(--p, 0%));
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #fff; border: none;
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 10px; height: 10px; border-radius: 50%; background: #fff; border: none;
+  }
+  #seek { width: 100%; }
+  #vol { width: 70px; }
+
+  iframe.drive { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #000; }
+  #player:fullscreen iframe.drive { height: 100%; aspect-ratio: auto; }
+
+  #erro {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; text-align: center; padding: 20px;
+    background: rgba(0,0,0,.92); font-size: .9rem;
+  }
+  #erro.show { display: flex; }
+  #erro p { max-width: 440px; line-height: 1.6; color: var(--dim); }
+  .btn {
+    border: 1px solid var(--line); color: var(--text); font-size: .85rem;
+    padding: 8px 18px; border-radius: 4px; cursor: pointer; display: inline-block;
+  }
+  .btn:hover { border-color: rgba(255,255,255,.4); }
+  input[type=file] { display: none; }
+  .dica { margin-top: 16px; font-size: .72rem; color: var(--dim); opacity: .6; text-align: center; }
+</style>
+</head>
+<body>
+
+<h1>FILMES <span>THATA</span></h1>
+
+<div id="player">
+  <video id="v" playsinline preload="metadata"></video>
+
+  <div id="erro">
+    <p>Não achei o filme na pasta.<br>
+    Coloque o arquivo com o nome <b id="nomeArq"></b> junto deste HTML, ou escolha o arquivo manualmente:</p>
+    <label class="btn">Escolher filme
+      <input type="file" id="arquivo" accept="video/*">
+    </label>
+  </div>
+
+  <div class="controls">
+    <input type="range" id="seek" min="0" max="1000" value="0" step="1">
+    <div class="row">
+      <button id="play" title="Play/Pausa (espaço)">▶</button>
+      <button id="back" title="Voltar 10s (←)">−10s</button>
+      <button id="fwd" title="Avançar 10s (→)">+10s</button>
+      <span class="time" id="tempo">0:00 / 0:00</span>
+      <span class="spacer"></span>
+      <button id="mute" title="Mudo (M)">Som</button>
+      <input type="range" id="vol" min="0" max="1" step="0.05" value="1">
+      <button id="full" title="Tela cheia (F)">⛶</button>
+    </div>
+  </div>
+</div>
+
+<p class="dica">Atalhos: Espaço = pausa · ← → = ±10s · ↑ ↓ = volume · M = mudo · F = tela cheia</p>
+
+<script>
+  // >>> Troque aqui o nome do seu filme (que está na mesma pasta) <<<
+  const NOME_DO_FILME = "filme.mp4";
+
+  // >>> Para usar o Google Drive, cole aqui o link de compartilhamento do filme <<<
+  // (o arquivo precisa estar como "Qualquer pessoa com o link"). Deixe "" para usar o arquivo da pasta.
+  const LINK_DRIVE = "https://drive.google.com/file/d/1jr_b80WsHcN5CPWqx9wVKxWulO4zWbCJ/view?usp=drive_link";
+
+  const $ = id => document.getElementById(id);
+  const player = $("player"), v = $("v"), seek = $("seek"), vol = $("vol");
+  const playBtn = $("play"), muteBtn = $("mute"), fullBtn = $("full"), tempo = $("tempo");
+  const erro = $("erro");
+
+  const idDrive = (LINK_DRIVE.match(/\/d\/([\w-]+)/) || LINK_DRIVE.match(/[?&]id=([\w-]+)/) || [])[1];
+  if (idDrive) {
+    const f = document.createElement("iframe");
+    f.className = "drive";
+    f.src = "https://drive.google.com/file/d/" + idDrive + "/preview";
+    f.allow = "autoplay; fullscreen";
+    f.allowFullscreen = true;
+    player.prepend(f);
+    ["#v", "#erro", ".controls", ".dica"].forEach(q => document.querySelector(q).style.display = "none");
+    document.addEventListener("keydown", e => e.stopImmediatePropagation(), true);
+  } else {
+  $("nomeArq").textContent = NOME_DO_FILME;
+  v.src = NOME_DO_FILME;
+  v.addEventListener("error", () => erro.classList.add("show"));
+  }
+
+  $("arquivo").addEventListener("change", e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    v.src = URL.createObjectURL(f);
+    erro.classList.remove("show");
+    v.play();
+  });
+
+  const fmt = s => {
+    if (!isFinite(s)) return "0:00";
+    s = Math.floor(s);
+    const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+    return (h ? h + ":" + String(m).padStart(2, "0") : m) + ":" + String(sec).padStart(2, "0");
+  };
+  const fill = (el, pct) => el.style.setProperty("--p", pct + "%");
+
+  const toggle = () => v.paused ? v.play() : v.pause();
+  playBtn.onclick = toggle;
+  v.onclick = toggle;
+  v.addEventListener("play",  () => playBtn.textContent = "❚❚");
+  v.addEventListener("pause", () => playBtn.textContent = "▶");
+
+  $("back").onclick = () => v.currentTime = Math.max(0, v.currentTime - 10);
+  $("fwd").onclick  = () => v.currentTime = Math.min(v.duration || 0, v.currentTime + 10);
+
+  let arrastando = false;
+  v.addEventListener("timeupdate", () => {
+    if (!arrastando && v.duration) {
+      seek.value = v.currentTime / v.duration * 1000;
+      fill(seek, seek.value / 10);
+    }
+    tempo.textContent = fmt(v.currentTime) + " / " + fmt(v.duration);
+  });
+  v.addEventListener("loadedmetadata", () => tempo.textContent = "0:00 / " + fmt(v.duration));
+  seek.addEventListener("input", () => {
+    arrastando = true;
+    fill(seek, seek.value / 10);
+    if (v.duration) v.currentTime = seek.value / 1000 * v.duration;
+  });
+  seek.addEventListener("change", () => arrastando = false);
+
+  vol.addEventListener("input", () => { v.volume = vol.value; v.muted = false; atualizaVol(); });
+  muteBtn.onclick = () => { v.muted = !v.muted; atualizaVol(); };
+  function atualizaVol() {
+    muteBtn.textContent = (v.muted || v.volume === 0) ? "Mudo" : "Som";
+    vol.value = v.muted ? 0 : v.volume;
+    fill(vol, vol.value * 100);
+  }
+  atualizaVol();
+
+  // Tela cheia (no container, para manter os controles)
+  function toggleFull() {
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      (player.requestFullscreen || player.webkitRequestFullscreen).call(player);
+    }
+  }
+  fullBtn.onclick = toggleFull;
+  v.ondblclick = toggleFull;
+
+  // Esconde controles após inatividade quando está tocando
+  let timer;
+  function mostra() {
+    player.classList.remove("hide");
+    clearTimeout(timer);
+    if (!v.paused) timer = setTimeout(() => player.classList.add("hide"), 2500);
+  }
+  player.addEventListener("mousemove", mostra);
+  player.addEventListener("touchstart", mostra);
+  v.addEventListener("play", mostra);
+  v.addEventListener("pause", mostra);
+
+  // Atalhos de teclado
+  document.addEventListener("keydown", e => {
+    switch (e.key) {
+      case " ": e.preventDefault(); toggle(); break;
+      case "ArrowLeft": v.currentTime = Math.max(0, v.currentTime - 10); break;
+      case "ArrowRight": v.currentTime = Math.min(v.duration || 0, v.currentTime + 10); break;
+      case "ArrowUp": e.preventDefault(); v.volume = Math.min(1, v.volume + .1); atualizaVol(); break;
+      case "ArrowDown": e.preventDefault(); v.volume = Math.max(0, v.volume - .1); atualizaVol(); break;
+      case "m": case "M": v.muted = !v.muted; atualizaVol(); break;
+      case "f": case "F": toggleFull(); break;
+    }
+    mostra();
+  });
+</script>
+</body>
+</html>
