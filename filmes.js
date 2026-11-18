@@ -1,12 +1,16 @@
-// FILMES THATA — cadastro dos filmes (são 3 espaços)
+
+// FILMES THATA — cadastro dos filmes
+//
+// Para adicionar um filme novo, copie um bloco { ... } e cole no fim da lista
+// (lembre da vírgula entre os blocos). Não há limite de filmes.
 //
 // titulo: nome que aparece embaixo da capa e na tela de assistir
-// capa:   caminho da imagem da capa (coloque o arquivo na pasta "imagens")
+// capa:   nome da imagem da capa (coloque o arquivo na mesma pasta do index.html)
 // link:   link de compartilhamento do Google Drive (Qualquer pessoa com o link)
 //         ou o nome de um arquivo .mp4 que esteja na mesma pasta do index.html
 //
 // Deixe link: "" para o espaço aparecer como "Em breve".
-
+ 
 const FILMES = [
   {
     titulo: "A Culpa é Das Estrelas",
