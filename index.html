@@ -66,7 +66,7 @@
   const driveId = l => { const m = l.match(/\/d\/([\w-]+)/) || l.match(/[?&]id=([\w-]+)/); return m && m[1]; };
 
   // Monta os 3 espaços da tela inicial
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     const f = FILMES[i] || {};
     const ativo = !!f.link;
     const card = document.createElement(ativo ? "button" : "div");
@@ -121,7 +121,7 @@
 
   function rota() {
     const n = parseInt(location.hash.slice(1), 10);
-    if (n >= 1 && n <= 3 && FILMES[n - 1] && FILMES[n - 1].link) {
+    if (n >= 1 && n <= 5 && FILMES[n - 1] && FILMES[n - 1].link) {
       abrir(n - 1);
     } else {
       player.innerHTML = "";              // para o filme ao voltar
