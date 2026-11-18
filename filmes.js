@@ -30,7 +30,7 @@ const FILMES = [
   },
   {
     titulo: "Um Amor Para Recordar",
-    capa: "antesdevc.jpg",
+    capa: "umamor.jpg",
     link: ""
   }
 ];
