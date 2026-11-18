@@ -22,5 +22,15 @@ const FILMES = [
     titulo: "Como Eu Era Antes de Você",
     capa: "antesdevc.jpg",
     link: "https://drive.google.com/file/d/1NI4entr3f7JN7Khk-SEYIsz2YbycWo-Z/view?usp=drive_link"
+  },
+  {
+    titulo: "Diário de Uma Paixão",
+    capa: "paixao.jpg",
+    link: ""
+  },
+  {
+    titulo: "Um Amor Para Recordar",
+    capa: "antesdevc.jpg",
+    link: ""
   }
 ];
