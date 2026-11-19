@@ -30,11 +30,11 @@ const FILMES = [
   {
     titulo: "Diário de Uma Paixão",
     capa: "paixao.jpg",
-    link: "https://drive.google.com/file/d/1NI4entr3f7JN7Khk-SEYIsz2YbycWo-Z/view?usp=drive_link"
+    link: "https://drive.google.com/file/d/1K-9TQD6m1JGbF7d_MqdyBNj70pmTu7N_/view?usp=drivesdk"
   },
   {
     titulo: "Um Amor Para Recordar",
     capa: "umamor.jpg",
-    link: ""
+    link: "https://drive.google.com/file/d/1iONlB6pm5a0eGmOcWkaKJs5aN5yMBCPj/view?usp=drivesdk"
   }
 ];
